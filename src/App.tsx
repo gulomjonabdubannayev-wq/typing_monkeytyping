@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Keyboard, BookOpen, Timer, PenTool, Settings, User, Trophy, 
   LogOut, Menu, X, ChevronRight, Zap, Target, Clock, Award, TrendingUp,
-  Volume2, VolumeX, Eye, EyeOff, Check, AlertCircle
+  Volume2, VolumeX, Eye, EyeOff, Check, AlertCircle, Type, Globe
 } from 'lucide-react';
 import { 
   User as UserType, getCurrentUser, loginUser, registerUser, updateUser, 
@@ -11,7 +11,7 @@ import {
   saveTestResult, TestResult, Theme as ThemeType
 } from './store';
 import TypingEngine from './components/TypingEngine';
-import { Dashboard, LessonsPage, SettingsPage, ProfilePage, FreeWritePage, TestPage, AchievementsPage } from './components/Pages';
+import { Dashboard, LessonsPage, SettingsPage, ProfilePage, FreeWritePage, TestPage, AchievementsPage, WordsPage } from './components/Pages';
 
 // ==================== CONTEXT ====================
 interface AppContextType {
@@ -164,6 +164,7 @@ function Sidebar({ currentPage, setCurrentPage, isOpen, setIsOpen }: { currentPa
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: tr('dashboard') },
     { id: 'practice', icon: Keyboard, label: tr('practice') },
+    { id: 'words', icon: Type, label: tr('words') },
     { id: 'lessons', icon: BookOpen, label: tr('lessons') },
     { id: 'test', icon: Timer, label: tr('test') },
     { id: 'freeWrite', icon: PenTool, label: tr('freeWrite') },
@@ -247,6 +248,83 @@ function Sidebar({ currentPage, setCurrentPage, isOpen, setIsOpen }: { currentPa
   );
 }
 
+// ==================== WORLD CLOCK ====================
+function WorldClock({ theme, tr }: { theme: any; tr: (key: string) => string }) {
+  const [time, setTime] = useState(new Date());
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const zones = [
+    { city: 'Toshkent', tz: 'Asia/Tashkent', flag: '🇺🇿' },
+    { city: 'London', tz: 'Europe/London', flag: '🇬🇧' },
+    { city: 'New York', tz: 'America/New_York', flag: '🇺🇸' },
+    { city: 'Tokyo', tz: 'Asia/Tokyo', flag: '🇯🇵' },
+    { city: 'Moskva', tz: 'Europe/Moscow', flag: '🇷🇺' },
+    { city: 'Dubai', tz: 'Asia/Dubai', flag: '🇦🇪' },
+    { city: 'Seoul', tz: 'Asia/Seoul', flag: '🇰🇷' },
+    { city: 'Sydney', tz: 'Australia/Sydney', flag: '🇦🇺' },
+  ];
+
+  const formatTime = (tz: string) => {
+    return time.toLocaleTimeString('en-US', { 
+      timeZone: tz, 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
+
+  const localTime = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+        style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
+      >
+        <Globe size={14} style={{ color: theme.primary }} />
+        <span className="text-xs font-mono font-medium" style={{ color: theme.text }}>{localTime}</span>
+      </button>
+      
+      <AnimatePresence>
+        {showDropdown && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="absolute top-full right-0 mt-2 p-4 rounded-xl z-50 min-w-[280px] shadow-2xl"
+              style={{ background: theme.bgCard, border: `1px solid ${theme.border}` }}
+            >
+              <h4 className="text-xs font-semibold mb-3 flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                <Globe size={12} />
+                {tr('worldTime')}
+              </h4>
+              <div className="space-y-2">
+                {zones.map(zone => (
+                  <div key={zone.city} className="flex items-center justify-between py-1.5 px-2 rounded-lg" style={{ background: theme.bg }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{zone.flag}</span>
+                      <span className="text-xs font-medium" style={{ color: theme.text }}>{zone.city}</span>
+                    </div>
+                    <span className="text-xs font-mono font-semibold" style={{ color: theme.primary }}>{formatTime(zone.tz)}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ==================== MAIN APP ====================
 export default function App() {
   const [user, setUser] = useState<UserType | null>(null);
@@ -293,6 +371,7 @@ export default function App() {
     switch (currentPage) {
       case 'dashboard': return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'practice': return <TypingEngine mode="practice" />;
+      case 'words': return <WordsPage />;
       case 'lessons': return <LessonsPage />;
       case 'test': return <TestPage />;
       case 'freeWrite': return <FreeWritePage />;
@@ -314,12 +393,13 @@ export default function App() {
             <button className="lg:hidden p-2 rounded-lg" onClick={() => setSidebarOpen(true)} style={{ color: theme.text }}>
               <Menu size={22} />
             </button>
-            <div className="flex items-center gap-4 ml-auto">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
+            <div className="flex items-center gap-3 ml-auto">
+              <WorldClock theme={theme} tr={tr} />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
                 <Zap size={14} style={{ color: theme.accent }} />
                 <span className="text-xs font-medium" style={{ color: theme.text }}>{user.xp} XP</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
                 <Award size={14} style={{ color: theme.primary }} />
                 <span className="text-xs font-medium" style={{ color: theme.text }}>{tr('level')} {user.level}</span>
               </div>

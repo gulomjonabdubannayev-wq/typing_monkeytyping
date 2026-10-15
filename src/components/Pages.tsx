@@ -10,7 +10,7 @@ import { useApp } from '../App';
 import TypingEngine from './TypingEngine';
 import { 
   THEMES, FONTS, LESSONS, ACHIEVEMENTS, updateUser, deleteUser, 
-  setCurrentUser, TestResult, Lesson, getFont
+  setCurrentUser, TestResult, Lesson, getFont, WORD_LISTS
 } from '../store';
 
 // ==================== DASHBOARD ====================
@@ -842,6 +842,140 @@ export function AchievementsPage() {
             </motion.div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ==================== WORDS PAGE ====================
+export function WordsPage() {
+  const { theme, tr } = useApp();
+  const [wordCategory, setWordCategory] = useState<'common' | 'programming' | 'science'>('common');
+  const [wordCount, setWordCount] = useState(25);
+  const [generatedText, setGeneratedText] = useState('');
+  const [isStarted, setIsStarted] = useState(false);
+
+  const generateWords = (count: number) => {
+    const words = WORD_LISTS[wordCategory];
+    const selected: string[] = [];
+    for (let i = 0; i < count; i++) {
+      selected.push(words[Math.floor(Math.random() * words.length)]);
+    }
+    return selected.join(' ');
+  };
+
+  const handleStart = () => {
+    const text = generateWords(wordCount);
+    setGeneratedText(text);
+    setIsStarted(true);
+  };
+
+  const handleRefresh = () => {
+    const text = generateWords(wordCount);
+    setGeneratedText(text);
+    setIsStarted(false);
+    setTimeout(() => setIsStarted(true), 50);
+  };
+
+  if (isStarted && generatedText) {
+    return (
+      <div>
+        <button onClick={() => setIsStarted(false)} className="mb-4 flex items-center gap-2 text-sm" style={{ color: theme.primary }}>
+          ← {tr('words')}
+        </button>
+        <TypingEngine mode="practice" text={generatedText} duration={0} />
+      </div>
+    );
+  }
+
+  const categories = [
+    { id: 'common' as const, label: tr('commonWords'), icon: '📝' },
+    { id: 'programming' as const, label: tr('programmingWords'), icon: '💻' },
+    { id: 'science' as const, label: tr('scienceWords'), icon: '🔬' },
+  ];
+
+  const wordCounts = [10, 25, 50, 100];
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold" style={{ color: theme.text }}>{tr('words')}</h1>
+      
+      <div className="p-6 rounded-2xl space-y-6" style={{ background: theme.bgCard, border: `1px solid ${theme.border}` }}>
+        {/* Category */}
+        <div>
+          <h3 className="text-sm font-medium mb-3" style={{ color: theme.textSecondary }}>{tr('wordMode')}</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setWordCategory(cat.id)}
+                className="p-4 rounded-xl text-center transition-all"
+                style={{
+                  background: wordCategory === cat.id ? `${theme.primary}20` : theme.bg,
+                  border: `2px solid ${wordCategory === cat.id ? theme.primary : theme.border}`,
+                  color: wordCategory === cat.id ? theme.primary : theme.textSecondary
+                }}
+              >
+                <span className="text-2xl mb-1 block">{cat.icon}</span>
+                <span className="text-xs font-medium">{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Word count */}
+        <div>
+          <h3 className="text-sm font-medium mb-3" style={{ color: theme.textSecondary }}>{tr('wordCount')}</h3>
+          <div className="grid grid-cols-4 gap-3">
+            {wordCounts.map(count => (
+              <button
+                key={count}
+                onClick={() => setWordCount(count)}
+                className="p-3 rounded-xl text-center transition-all"
+                style={{
+                  background: wordCount === count ? theme.primary : theme.bg,
+                  color: wordCount === count ? '#fff' : theme.textSecondary,
+                  border: `1px solid ${wordCount === count ? theme.primary : theme.border}`
+                }}
+              >
+                <span className="text-lg font-bold">{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Preview */}
+        {generatedText && (
+          <div className="p-4 rounded-xl" style={{ background: theme.bg }}>
+            <p className="text-sm leading-relaxed" style={{ color: theme.textSecondary, fontFamily: "'JetBrains Mono', monospace" }}>
+              {generatedText}
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleRefresh}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all"
+            style={{ background: theme.bg, color: theme.text, border: `1px solid ${theme.border}` }}
+          >
+            <RotateCcw size={16} />
+            {tr('refresh')}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleStart}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white"
+            style={{ background: theme.primary }}
+          >
+            <Play size={16} />
+            {tr('start')}
+          </motion.button>
+        </div>
       </div>
     </div>
   );
